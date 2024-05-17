@@ -1,95 +1,77 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+
+import React, { useState } from 'react';
+
+function formatDate(date: Date): string {
+  const pad = (num: number) => num.toString().padStart(2, '0');
+
+  let year = date.getUTCFullYear();
+  let month = pad(date.getUTCMonth() + 1); // Months are 0-indexed
+  let day = pad(date.getUTCDate());
+  let hours = pad(date.getUTCHours());
+  let minutes = pad(date.getUTCMinutes());
+  let seconds = pad(date.getUTCSeconds());
+  let milliseconds = date.getUTCMilliseconds().toString().padStart(3, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+}
+
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+  const [buildStart, setBuildStart] = useState('');
+  const [buildEnd, setBuildEnd] = useState('');
+  const [resultsUrl, setResultsUrl] = useState('');
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Clear any previous result url
+    setResultsUrl("")
+    try {
+      // Get build epochs
+      const goodBuildResponse = await fetch(`https://androidx.dev/snapshots/builds/${buildStart}/artifacts/logs/STARTED`);
+      const goodBuildEpoch = await goodBuildResponse.text()
+      const badBuildResponse = await fetch(`https://androidx.dev/snapshots/builds/${buildEnd}/artifacts/logs/STARTED`);
+      const badBuildEpoch = await badBuildResponse.text()
+      console.log("Start epoch", goodBuildEpoch)
+      console.log("End epoch", badBuildEpoch)
+      if (goodBuildEpoch == "" || badBuildEpoch == "") return;
+      // Create build dates
+      const startDate = new Date(parseInt(goodBuildEpoch) * 1000);
+      const endDate = new Date(parseInt(badBuildEpoch) * 1000);
+      console.log("Start date", startDate)
+      console.log("End date", endDate)
+      // Format dates to use a date accepted by Gerrit
+      const startDateFormatted = formatDate(startDate)
+      const endDateFormatted = formatDate(endDate)
+      console.log("Format start date", startDateFormatted)
+      console.log("Format end date", endDateFormatted)
+      // Url with CL search query
+      const finalUrl = "https://android-review.googlesource.com/q/" + encodeURIComponent(`project:platform/frameworks/support status:merged mergedafter: {${startDateFormatted}} mergedbefore: {${endDateFormatted}}`)
+      console.log("URL", finalUrl)
+      setResultsUrl(finalUrl)
+    } catch (error) {
+      console.error('Error fetching commits:', error);
+    }
+  };
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+  return <form onSubmit={handleSubmit}>
+    <input
+      type="text"
+      value={buildStart}
+      onChange={(e) => setBuildStart(e.target.value)}
+      placeholder="Start Build Number (GOOD)"
+    />
+    <input
+      type="text"
+      value={buildEnd}
+      onChange={(e) => setBuildEnd(e.target.value)}
+      placeholder="End Build Number (BAD)"
+    />
+    <button type="submit">Search Commits</button>
+    {resultsUrl != "" &&
+      <a href={resultsUrl} target="_blank">Go to search results</a>
+    }
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+  </form>
 }
