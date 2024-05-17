@@ -1,5 +1,6 @@
 import Image from "next/image";
 import styles from "./page.module.css";
+import { prefix } from "../../../prefix"
 
 export default function Default() {
   return (
@@ -17,7 +18,7 @@ export default function Default() {
           >
             By{" "}
             <Image
-              src="/vercel.svg"
+              src={`${prefix}/vercel.svg`}
               alt="Vercel Logo"
               className={styles.vercelLogo}
               width={100}
@@ -31,7 +32,7 @@ export default function Default() {
       <div className={styles.center}>
         <Image
           className={styles.logo}
-          src="/next.svg"
+          src={`${prefix}/next.svg`}
           alt="Next.js Logo"
           width={180}
           height={37}
