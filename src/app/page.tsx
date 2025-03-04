@@ -69,10 +69,13 @@ export default function Home() {
 
       if (!startDate || !endDate) return;
       console.log("Start date", startDate)
+      const adjustedStartDate = new Date(startDate)
+      adjustedStartDate.setHours(adjustedStartDate.getHours() - 1);
+      console.log("Adjusted start date (-1h)", adjustedStartDate)
       console.log("End date", endDate)
 
       // Format dates to use a date accepted by Gerrit
-      const startDateFormatted = formatDate(startDate)
+      const startDateFormatted = formatDate(adjustedStartDate)
       const endDateFormatted = formatDate(endDate)
       console.log("Format start date", startDateFormatted)
       console.log("Format end date", endDateFormatted)
